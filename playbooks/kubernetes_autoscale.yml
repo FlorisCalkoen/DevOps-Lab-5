@@ -1,0 +1,17 @@
+- hosts: k8-master
+  gather_facts: False
+  tasks:
+
+  - name: Install zip
+    apt: name=zip
+    become: true
+
+  - name: Unarchive surfdrive
+    unarchive:
+      src: https://surfdrive.surf.nl/files/index.php/s/RCxPtHnz1agrY7V/download
+      dest: ~/
+      remote_src: yes
+
+  - name: kubectl create -f ~/kubernetes/
+    shell: kubectl create -f ~/kubernetes/
+    become_user: ubuntu
