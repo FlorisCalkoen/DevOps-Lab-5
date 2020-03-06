@@ -1,15 +1,18 @@
 [k8-master]
 ec2-54-224-31-65.compute-1.amazonaws.com
 
+
 [worker]
 ec2-54-81-211-45.compute-1.amazonaws.com
 ec2-34-230-23-211.compute-1.amazonaws.com
 ec2-54-167-193-29.compute-1.amazonaws.com
 ec2-35-171-182-30.compute-1.amazonaws.com
 
+
 [cluster:children]
 k8-master
 worker
+
 
 [cluster:vars]
 ansible_ssh_private_key_file=~/.ssh/devops_pract5.pem
