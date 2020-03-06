@@ -1,0 +1,14 @@
+[web-server]
+ec2-3-92-85-29.compute-1.amazonaws.com
+
+[db]
+ec2-3-81-121-254.compute-1.amazonaws.com
+
+[cluster:children]
+web-server
+db
+
+[cluster:vars]
+ansible_ssh_private_key_file=~/.ssh/devops_pract5.pem
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+ansible_ssh_user=ubuntu
