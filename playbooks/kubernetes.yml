@@ -1,0 +1,108 @@
+---
+- hosts: cluster
+  gather_facts: False
+  become: yes
+  tasks:
+
+    - name: Bootstrap a host without python2 installed
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python)
+
+    - name: Install of packages
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - docker.io
+        - apt-transport-https
+
+    - name: add key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: add kubernetes repo
+      apt_repository:
+        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        update_cache: yes
+
+    - name: Install kubernetes packages
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - kubelet
+        - kubeadm
+        - kubernetes-cni
+
+- hosts: k8-master
+  tasks:
+
+    - name: kubeadm init
+      shell: kubeadm init
+      become: yes
+
+    - name: Create directory .kube
+      file:
+        path: $HOME/.kube
+        state: directory
+        recurse: yes
+
+    - name: copy admin.conf
+      become: yes
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/{{ ansible_ssh_user }}/.kube/config"
+        owner: "{{ ansible_ssh_user }}"
+        group: "{{ ansible_ssh_user }}"
+        remote_src: True
+
+    - name: set bridge
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
+        state: present
+      become: yes
+
+    - name: kubeadm set weave
+      shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+    - name: kubectl taint nodes
+      shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+    - name: Print the join command
+      shell: kubeadm token create --print-join-command
+      register: command_output
+
+    - name:
+      debug:
+        msg: "{{ command_output.stdout }}"
+
+    - name: Add command_output to dummy host
+      add_host:
+        name: "command_output_holder"
+        token: "{{ command_output.stdout }}"
+
+- hosts: worker
+  become: true
+  gather_facts: False
+  tasks:
+
+  - name: execute token
+    shell: "{{ hostvars['command_output_holder']['token'] }}"
+
+- hosts: k8-master
+  become: true
+  gather_facts: False
+  tasks:
+
+  - name: Verify
+    shell: kubectl get nodes
+    become_user: ubuntu
+    register: command_output
+
+  - name:
+    debug:
+      msg: "{{ command_output.stdout }}"

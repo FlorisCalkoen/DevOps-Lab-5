@@ -8,6 +8,10 @@ ec2-54-167-193-29.compute-1.amazonaws.com
 ec2-35-171-182-30.compute-1.amazonaws.com
 
 [cluster:children]
-ansible_ssh_private_key_files=~/.ssh/devops_pract5.pem
+k8-master
+worker
+
+[cluster:vars]
+ansible_ssh_private_key_file=~/.ssh/devops_pract5.pem
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ansible_ssh_user=ubuntu
